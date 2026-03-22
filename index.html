@@ -211,9 +211,11 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_Betjh1F-RC1UuHtUfSkwqg_l5uf_Aq5';
     
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
 
     // UUID del usuario invitado (debe existir en auth.users)
     const GUEST_USER_ID = 'b39e0d1a-de9f-4af4-8f39-fd8ff4c421cf';
+    
 
     let productos = [];
     let cart = [];
@@ -393,12 +395,14 @@
         await loadLastOrders();
     }
 
-    async function loadLastOrders() {
+   
+
+async function loadLastOrders() {
     const container = document.getElementById('ordersList');
     if (!container) return;
     container.innerHTML = 'Cargando pedidos...';
 
-    // 1. Obtener los últimos 5 pedidos del invitado
+    // 1. Obtener pedidos del invitado
     const { data: pedidos, error: pedidosError } = await supabaseClient
         .from('pedidos')
         .select('id, total, estado, created_at')
@@ -417,11 +421,10 @@
         return;
     }
 
-    // 2. Obtener los IDs de los pedidos
     const pedidosIds = pedidos.map(p => p.id);
 
-    // 3. Obtener los detalles de esos pedidos, incluyendo el nombre del producto
-    const { data: detalles_pedido, error: detallesError } = await supabaseClient
+    // 2. Obtener detalles de esos pedidos
+    const { data: detalles, error: detallesError } = await supabaseClient
         .from('detalles_pedido')
         .select(`
             pedido_id,
@@ -433,19 +436,18 @@
 
     if (detallesError) {
         console.error('Error cargando detalles:', detallesError);
-        container.innerHTML = '<p>Error al cargar detalles de pedidos: ' + detallesError.message + '</p>';
+        container.innerHTML = '<p>Error al cargar detalles: ' + detallesError.message + '</p>';
         return;
     }
 
-    // 4. Agrupar detalles por pedido_id
+    // 3. Agrupar detalles por pedido_id
     const detallesPorPedido = {};
     detalles.forEach(d => {
-        const pedidoId = d.pedido_id;
-        if (!detallesPorPedido[pedidoId]) detallesPorPedido[pedidoId] = [];
-        detallesPorPedido[pedidoId].push(d);
+        if (!detallesPorPedido[d.pedido_id]) detallesPorPedido[d.pedido_id] = [];
+        detallesPorPedido[d.pedido_id].push(d);
     });
 
-    // 5. Renderizar
+    // 4. Renderizar
     container.innerHTML = pedidos.map(pedido => {
         const items = detallesPorPedido[pedido.id] || [];
         const productosTexto = items.map(item => {
