@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tienda Virtual | Admin y Cliente</title>
+    <title>Tienda Virtual | Supabase Auth</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* (mismos estilos que antes) */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
         body { background: #f3f4f6; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
@@ -79,7 +80,6 @@
     <!-- Panel principal (después de login) -->
     <div id="mainPanel" style="display:none">
         <div class="tabs" id="roleTabs">
-            <!-- Estas pestañas se mostrarán según el rol -->
             <div class="tab client-only" data-view="productos">Productos</div>
             <div class="tab client-only" data-view="carrito">Carrito <span id="cartCountBadge" class="badge">0</span></div>
             <div class="tab client-only" data-view="pedidos">Mis pedidos</div>
@@ -114,7 +114,7 @@
                 <table class="admin-table">
                     <thead>汽<th>Nombre</th><th>Precio</th><th>Stock</th><th>Acciones</th> </thead>
                     <tbody id="adminProductosTable"></tbody>
-                 </table>
+                  </table>
             </div>
         </div>
 
@@ -125,7 +125,7 @@
     </div>
 </div>
 
-<!-- Modal del carrito (solo para cliente) -->
+<!-- Modal del carrito -->
 <div id="cartModal" class="cart-modal">
     <div class="cart-content">
         <h3>Mi Carrito</h3>
@@ -143,66 +143,59 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ========== ESTADO ==========
-    let currentUser = null;
+    let currentUser = null;      // { id, email, rol }
     let productos = [];
     let cart = [];
 
-    // ========== LOGIN ==========
-    async function login(email, password) {
-        const loginErrorDiv = document.getElementById('loginError');
-        if (loginErrorDiv) loginErrorDiv.innerText = '';
-
+    // ========== CARGAR PERFIL DEL USUARIO (rol) ==========
+    async function loadUserProfile() {
         const { data, error } = await supabaseClient
             .from('perfiles')
-            .select('id, nombre, rol, contraseña')
-            .eq('nombre', email)
-            .maybeSingle();
-
+            .select('rol')
+            .eq('id', currentUser.id)
+            .single();
         if (error) {
-            console.error('Error consultando perfiles:', error);
-            if (loginErrorDiv) loginErrorDiv.innerText = 'Error de conexión con Supabase';
+            console.error('Error cargando perfil:', error);
+            return { rol: 'cliente' };
+        }
+        return data;
+    }
+
+    // ========== LOGIN / REGISTRO con Supabase Auth ==========
+    async function login(email, password) {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) {
+            document.getElementById('loginError').innerText = error.message;
             return false;
         }
-
-        if (!data) {
-            if (loginErrorDiv) loginErrorDiv.innerText = 'Usuario no encontrado';
-            return false;
-        }
-
-        if (data.contraseña !== password) {
-            if (loginErrorDiv) loginErrorDiv.innerText = 'Contraseña incorrecta';
-            return false;
-        }
-
-        currentUser = { id: data.id, email: email, nombre: data.nombre, rol: data.rol };
+        currentUser = data.user;
+        const profile = await loadUserProfile();
+        currentUser.rol = profile.rol;
         return true;
     }
 
     async function register(email, password, nombre) {
-        const registerErrorDiv = document.getElementById('registerError');
-        if (registerErrorDiv) registerErrorDiv.innerText = '';
-
-        const { data: exist, error: existError } = await supabaseClient
-            .from('perfiles')
-            .select('id')
-            .eq('nombre', email)
-            .maybeSingle();
-
-        if (exist) {
-            if (registerErrorDiv) registerErrorDiv.innerText = 'El usuario ya existe';
+        const { data, error } = await supabaseClient.auth.signUp({
+            email,
+            password,
+            options: {
+                data: { name: nombre }
+            }
+        });
+        if (error) {
+            document.getElementById('registerError').innerText = error.message;
             return false;
         }
-
-        const newId = crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString() + Math.random());
-        const { error: insertError } = await supabaseClient
-            .from('perfiles')
-            .insert({ id: newId, nombre: email, rol: 'cliente', contraseña: password });
-
-        if (insertError) {
-            if (registerErrorDiv) registerErrorDiv.innerText = 'Error al crear usuario: ' + insertError.message;
-            return false;
-        }
+        // El perfil se crea automáticamente con el trigger handle_new_user (perfiles.id = auth.users.id, rol='cliente')
+        // Si quieres asignar nombre, ya se pasó en metadata.
         return true;
+    }
+
+    // ========== CERRAR SESIÓN ==========
+    async function logout() {
+        await supabaseClient.auth.signOut();
+        currentUser = null;
+        location.reload();
     }
 
     // ========== PRODUCTOS ==========
@@ -247,7 +240,7 @@
         }
     }
 
-    // ========== CARRITO (solo para clientes) ==========
+    // ========== CARRITO ==========
     function addToCart(productoId) {
         const producto = productos.find(p => p.id === productoId);
         if (!producto) return;
@@ -310,9 +303,10 @@
         }
     }
 
-    // ========== COMPRA (solo clientes) ==========
+    // ========== COMPRA ==========
     async function checkout() {
         if (cart.length === 0) { alert('Carrito vacío'); return; }
+        // Verificar stock actual
         for (let item of cart) {
             const { data, error } = await supabaseClient
                 .from('productos')
@@ -499,17 +493,16 @@
 
         const userArea = document.getElementById('userArea');
         if (userArea) {
-            userArea.innerHTML = `<span>👋 ${currentUser.nombre} (${currentUser.rol})</span><button id="logoutBtn" class="btn-outline">Cerrar sesión</button>`;
-            document.getElementById('logoutBtn').onclick = () => { currentUser = null; location.reload(); };
+            userArea.innerHTML = `<span>👋 ${currentUser.email} (${currentUser.rol})</span><button id="logoutBtn" class="btn-outline">Cerrar sesión</button>`;
+            document.getElementById('logoutBtn').onclick = () => logout();
         }
 
-        // Mostrar las pestañas según rol
+        // Mostrar pestañas según rol
         const clientTabs = document.querySelectorAll('.client-only');
         const adminTabs = document.querySelectorAll('.admin-only');
         if (currentUser.rol === 'admin') {
             clientTabs.forEach(tab => tab.style.display = 'none');
             adminTabs.forEach(tab => tab.style.display = 'inline-block');
-            // Asegurar que la primera pestaña visible sea "Admin: Productos"
             showView('adminProductos');
         } else {
             clientTabs.forEach(tab => tab.style.display = 'inline-block');
@@ -520,6 +513,20 @@
         await loadProductos();
         if (currentUser.rol === 'cliente') {
             loadCart();
+        }
+    }
+
+    // ========== INICIALIZAR SESIÓN ==========
+    async function init() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) {
+            currentUser = session.user;
+            const profile = await loadUserProfile();
+            currentUser.rol = profile.rol;
+            renderUI();
+        } else {
+            document.getElementById('authScreen').style.display = 'block';
+            document.getElementById('mainPanel').style.display = 'none';
         }
     }
 
@@ -535,7 +542,7 @@
         const pass = document.getElementById('regPassword').value;
         const name = document.getElementById('regName').value;
         const ok = await register(email, pass, name);
-        if (ok) { alert('Registro exitoso, ahora inicia sesión'); document.querySelector('[data-tab="login"]').click(); }
+        if (ok) { alert('Registro exitoso. Revisa tu correo para confirmar (si la confirmación está activada). Ahora inicia sesión.'); document.querySelector('[data-tab="login"]').click(); }
     });
     document.querySelectorAll('[data-tab]').forEach(tab => {
         tab.addEventListener('click', () => {
@@ -554,9 +561,8 @@
     document.getElementById('refreshBtn').addEventListener('click', loadProductos);
     document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { if (tab.dataset.view) showView(tab.dataset.view); }));
 
-    // Inicialización
-    document.getElementById('authScreen').style.display = 'block';
-    document.getElementById('mainPanel').style.display = 'none';
+    // Iniciar
+    init();
 </script>
 </body>
 </html>
