@@ -40,7 +40,6 @@
         .admin-table { width: 100%; border-collapse: collapse; background: white; border-radius: 16px; overflow: hidden; }
         .admin-table th, .admin-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
         .admin-table th { background: #f9fafb; }
-        /* Estilo para imagen en tabla admin con zoom */
         .admin-product-img {
             width: 50px;
             height: 50px;
@@ -94,7 +93,6 @@
     <!-- Panel principal (después de login) -->
     <div id="mainPanel" style="display:none">
         <div class="tabs" id="roleTabs">
-            <!-- Estas pestañas se mostrarán según el rol -->
             <div class="tab client-only" data-view="productos">Productos</div>
             <div class="tab client-only" data-view="carrito">Carrito <span id="cartCountBadge" class="badge">0</span></div>
             <div class="tab client-only" data-view="pedidos">Mis pedidos</div>
@@ -102,6 +100,7 @@
             <div class="tab admin-only" data-view="adminPedidos" style="display:none">Admin: Pedidos</div>
         </div>
 
+        <!-- VISTAS -->
         <div id="viewProductos">
             <div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2>Productos</h2>
@@ -128,10 +127,10 @@
             <div class="mt-4">
                 <table class="admin-table">
                     <thead>
-                        汽<th>Imagen</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Acciones</th>
+                        <th>Imagen</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Acciones</th>
                     </thead>
                     <tbody id="adminProductosTable"></tbody>
-                追赶
+                </table>
             </div>
         </div>
 
@@ -423,7 +422,7 @@
                     <button class="btn-outline edit-product" data-id="${p.id}">Editar</button>
                     <button class="btn-danger delete-product" data-id="${p.id}">Eliminar</button>
                 </td>
-            </tr>
+             </tr>
         `).join('');
         document.querySelectorAll('.edit-product').forEach(btn => btn.addEventListener('click', () => editProductoForm(btn.dataset.id)));
         document.querySelectorAll('.delete-product').forEach(btn => btn.addEventListener('click', async () => {
@@ -453,6 +452,7 @@
     async function loadAdminPedidos() {
         const container = document.getElementById('adminPedidosList');
         if (!container) return;
+        container.innerHTML = 'Cargando pedidos...';
         const { data, error } = await supabaseClient
             .from('pedidos')
             .select(`
@@ -468,7 +468,15 @@
                 )
             `)
             .order('created_at', { ascending: false });
-        if (error) { container.innerHTML = '<p>Error al cargar pedidos.</p>'; return; }
+        if (error) {
+            console.error('Error cargando pedidos admin:', error);
+            container.innerHTML = '<p>Error al cargar pedidos.</p>';
+            return;
+        }
+        if (data.length === 0) {
+            container.innerHTML = '<p>No hay pedidos aún.</p>';
+            return;
+        }
         container.innerHTML = data.map(p => `
             <div class="order-item">
                 <div class="order-id">Pedido #${p.id.slice(0,8)}</div>
@@ -498,13 +506,29 @@
 
     // ========== NAVEGACIÓN ==========
     function showView(viewId) {
-        document.querySelectorAll('#mainPanel > div[id^="view"]').forEach(div => div.style.display = 'none');
+        console.log('🔄 Mostrando vista:', viewId);
+        // Ocultar todas las vistas (hijos directos de #mainPanel que empiecen con "view")
+        document.querySelectorAll('#mainPanel > div[id^="view"]').forEach(div => {
+            div.style.display = 'none';
+        });
+        // Mostrar la vista solicitada
         const targetDiv = document.getElementById(`view${viewId.charAt(0).toUpperCase() + viewId.slice(1)}`);
-        if (targetDiv) targetDiv.style.display = 'block';
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        if (targetDiv) {
+            targetDiv.style.display = 'block';
+            console.log('✅ Vista mostrada:', targetDiv.id);
+        } else {
+            console.error('❌ No se encontró la vista:', `view${viewId.charAt(0).toUpperCase() + viewId.slice(1)}`);
+        }
+        // Marcar la pestaña activa
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
         const activeTab = document.querySelector(`.tab[data-view="${viewId}"]`);
         if (activeTab) activeTab.classList.add('active');
-        if (viewId === 'carrito') { updateCartUI(); document.getElementById('cartModal').style.display = 'flex'; }
+        
+        // Acciones adicionales
+        if (viewId === 'carrito') {
+            updateCartUI();
+            document.getElementById('cartModal').style.display = 'flex';
+        }
         if (viewId === 'pedidos') loadUserOrders();
         if (viewId === 'adminProductos') renderAdminProductosTable();
         if (viewId === 'adminPedidos') loadAdminPedidos();
@@ -527,7 +551,7 @@
         if (currentUser.rol === 'admin') {
             clientTabs.forEach(tab => tab.style.display = 'none');
             adminTabs.forEach(tab => tab.style.display = 'inline-block');
-            // Asegurar que la primera pestaña visible sea "Admin: Productos"
+            // Mostrar la primera vista de admin (productos)
             showView('adminProductos');
         } else {
             clientTabs.forEach(tab => tab.style.display = 'inline-block');
