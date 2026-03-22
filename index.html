@@ -382,16 +382,14 @@
         const { data, error } = await supabaseClient
             .from('pedidos')
             .select(`
-                id,
-                total,
-                estado,
-                created_at,
-                detalles_pedido (
-                    cantidad,
-                    precio_momento,
-                    productos (nombre)
-                )
-            `)
+    id,
+    usuario_id,
+    total,
+    estado,
+    created_at,
+    detalles_pedido (cantidad, precio_momento, productos (nombre)),
+    perfiles!inner (nombre)
+`)
             .eq('usuario_id', currentUser.id)
             .order('created_at', { ascending: false })
             .limit(10);
