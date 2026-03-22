@@ -396,7 +396,6 @@
     }
 
    
-
 async function loadLastOrders() {
     const container = document.getElementById('ordersList');
     if (!container) return;
@@ -411,7 +410,7 @@ async function loadLastOrders() {
         .limit(5);
 
     if (pedidosError) {
-        console.error('Error cargando pedidos:', pedidosError);
+        console.error('Error pedidos:', pedidosError);
         container.innerHTML = '<p>Error al cargar pedidos: ' + pedidosError.message + '</p>';
         return;
     }
@@ -423,7 +422,7 @@ async function loadLastOrders() {
 
     const pedidosIds = pedidos.map(p => p.id);
 
-    // 2. Obtener detalles de esos pedidos
+    // 2. Obtener detalles de esos pedidos (tabla: detalles_pedido)
     const { data: detalles, error: detallesError } = await supabaseClient
         .from('detalles_pedido')
         .select(`
@@ -435,7 +434,7 @@ async function loadLastOrders() {
         .in('pedido_id', pedidosIds);
 
     if (detallesError) {
-        console.error('Error cargando detalles:', detallesError);
+        console.error('Error detalles:', detallesError);
         container.innerHTML = '<p>Error al cargar detalles: ' + detallesError.message + '</p>';
         return;
     }
@@ -465,7 +464,7 @@ async function loadLastOrders() {
         `;
     }).join('');
 }
-
+    
     document.getElementById('viewCartBtn').onclick = () => {
         updateCartUI();
         document.getElementById('cartModal').style.display = 'flex';
