@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tienda Virtual | Login con perfiles</title>
+    <title>Tienda Virtual | Admin y Cliente</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* ========== ESTILOS ========== */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
         body { background: #f3f4f6; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
@@ -80,9 +79,10 @@
     <!-- Panel principal (después de login) -->
     <div id="mainPanel" style="display:none">
         <div class="tabs" id="roleTabs">
-            <div class="tab active" data-view="productos">Productos</div>
-            <div class="tab" data-view="carrito">Carrito <span id="cartCountBadge" class="badge">0</span></div>
-            <div class="tab" data-view="pedidos">Mis pedidos</div>
+            <!-- Estas pestañas se mostrarán según el rol -->
+            <div class="tab client-only" data-view="productos">Productos</div>
+            <div class="tab client-only" data-view="carrito">Carrito <span id="cartCountBadge" class="badge">0</span></div>
+            <div class="tab client-only" data-view="pedidos">Mis pedidos</div>
             <div class="tab admin-only" data-view="adminProductos" style="display:none">Admin: Productos</div>
             <div class="tab admin-only" data-view="adminPedidos" style="display:none">Admin: Pedidos</div>
         </div>
@@ -112,9 +112,9 @@
             <button id="newProductoBtn" class="btn">+ Nuevo producto</button>
             <div class="mt-4">
                 <table class="admin-table">
-                    <thead><tr><th>Nombre</th><th>Precio</th><th>Stock</th><th>Acciones</th></tr></thead>
+                    <thead>汽<th>Nombre</th><th>Precio</th><th>Stock</th><th>Acciones</th> </thead>
                     <tbody id="adminProductosTable"></tbody>
-                </table>
+                 </table>
             </div>
         </div>
 
@@ -125,7 +125,7 @@
     </div>
 </div>
 
-<!-- Modal del carrito -->
+<!-- Modal del carrito (solo para cliente) -->
 <div id="cartModal" class="cart-modal">
     <div class="cart-content">
         <h3>Mi Carrito</h3>
@@ -147,7 +147,7 @@
     let productos = [];
     let cart = [];
 
-    // ========== FUNCIÓN DE LOGIN (USA TABLA perfiles) ==========
+    // ========== LOGIN ==========
     async function login(email, password) {
         const loginErrorDiv = document.getElementById('loginError');
         if (loginErrorDiv) loginErrorDiv.innerText = '';
@@ -182,7 +182,6 @@
         const registerErrorDiv = document.getElementById('registerError');
         if (registerErrorDiv) registerErrorDiv.innerText = '';
 
-        // Verificar si ya existe
         const { data: exist, error: existError } = await supabaseClient
             .from('perfiles')
             .select('id')
@@ -194,7 +193,6 @@
             return false;
         }
 
-        // Generar UUID
         const newId = crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString() + Math.random());
         const { error: insertError } = await supabaseClient
             .from('perfiles')
@@ -207,7 +205,7 @@
         return true;
     }
 
-    // ========== CARGAR PRODUCTOS ==========
+    // ========== PRODUCTOS ==========
     async function loadProductos() {
         const { data, error } = await supabaseClient
             .from('productos')
@@ -236,16 +234,20 @@
                     <div class="product-name">${p.nombre}</div>
                     <div class="product-price">S/ ${p.precio}</div>
                     <div class="product-stock">Stock: ${p.stock}</div>
-                    ${p.stock > 0 ? `<button class="add-to-cart" data-id="${p.id}">Añadir al carrito</button>` : '<button disabled>Agotado</button>'}
+                    ${currentUser && currentUser.rol === 'cliente' && p.stock > 0 
+                        ? `<button class="add-to-cart" data-id="${p.id}">Añadir al carrito</button>` 
+                        : (p.stock <= 0 ? '<button disabled>Agotado</button>' : '')}
                 </div>
             </div>
         `).join('');
-        document.querySelectorAll('.add-to-cart').forEach(btn => {
-            btn.addEventListener('click', () => addToCart(btn.dataset.id));
-        });
+        if (currentUser && currentUser.rol === 'cliente') {
+            document.querySelectorAll('.add-to-cart').forEach(btn => {
+                btn.addEventListener('click', () => addToCart(btn.dataset.id));
+            });
+        }
     }
 
-    // ========== CARRITO ==========
+    // ========== CARRITO (solo para clientes) ==========
     function addToCart(productoId) {
         const producto = productos.find(p => p.id === productoId);
         if (!producto) return;
@@ -301,14 +303,14 @@
     }
 
     function loadCart() {
-        if (currentUser) {
+        if (currentUser && currentUser.rol === 'cliente') {
             const stored = localStorage.getItem(`cart_${currentUser.id}`);
             cart = stored ? JSON.parse(stored) : [];
             updateCartUI(); updateCartCountBadge();
         }
     }
 
-    // ========== COMPRA ==========
+    // ========== COMPRA (solo clientes) ==========
     async function checkout() {
         if (cart.length === 0) { alert('Carrito vacío'); return; }
         for (let item of cart) {
@@ -328,7 +330,11 @@
             .insert({ usuario_id: currentUser.id, total, estado: 'pendiente' })
             .select()
             .single();
-        if (pedidoError) { alert('Error al crear pedido'); return; }
+        if (pedidoError) {
+            console.error('Error pedido:', pedidoError);
+            alert('Error al crear pedido: ' + (pedidoError.message || ''));
+            return;
+        }
         const detalles = cart.map(item => ({
             pedido_id: pedido.id,
             producto_id: item.productoId,
@@ -336,7 +342,11 @@
             precio_momento: item.producto.precio
         }));
         const { error: detallesError } = await supabaseClient.from('detalles_pedido').insert(detalles);
-        if (detallesError) { alert('Error al guardar productos'); return; }
+        if (detallesError) {
+            console.error('Error detalles:', detallesError);
+            alert('Error al guardar productos: ' + (detallesError.message || ''));
+            return;
+        }
         for (let item of cart) {
             await supabaseClient.rpc('decrementar_stock', { prod_id: item.productoId, cantidad: item.cantidad });
         }
@@ -346,10 +356,9 @@
         document.getElementById('cartModal').style.display = 'none';
         await loadProductos();
         await loadUserOrders();
-        if (currentUser.rol === 'admin') loadAdminPedidos();
     }
 
-    // ========== PEDIDOS DEL USUARIO ==========
+    // ========== PEDIDOS DEL CLIENTE ==========
     async function loadUserOrders() {
         const container = document.getElementById('ordersList');
         if (!container) return;
@@ -383,7 +392,7 @@
         `).join('');
     }
 
-    // ========== ADMIN: PRODUCTOS ==========
+    // ========== ADMIN: GESTIÓN DE PRODUCTOS ==========
     async function renderAdminProductosTable() {
         const tbody = document.getElementById('adminProductosTable');
         if (!tbody) return;
@@ -396,7 +405,7 @@
                     <button class="btn-outline edit-product" data-id="${p.id}">Editar</button>
                     <button class="btn-danger delete-product" data-id="${p.id}">Eliminar</button>
                 </td>
-             </tr>
+            </tr>
         `).join('');
         document.querySelectorAll('.edit-product').forEach(btn => btn.addEventListener('click', () => editProductoForm(btn.dataset.id)));
         document.querySelectorAll('.delete-product').forEach(btn => btn.addEventListener('click', async () => {
@@ -422,7 +431,7 @@
         else loadProductos();
     });
 
-    // ========== ADMIN: TODOS LOS PEDIDOS ==========
+    // ========== ADMIN: VER TODOS LOS PEDIDOS ==========
     async function loadAdminPedidos() {
         const container = document.getElementById('adminPedidosList');
         if (!container) return;
@@ -487,17 +496,31 @@
         if (!currentUser) return;
         document.getElementById('authScreen').style.display = 'none';
         document.getElementById('mainPanel').style.display = 'block';
+
         const userArea = document.getElementById('userArea');
         if (userArea) {
             userArea.innerHTML = `<span>👋 ${currentUser.nombre} (${currentUser.rol})</span><button id="logoutBtn" class="btn-outline">Cerrar sesión</button>`;
             document.getElementById('logoutBtn').onclick = () => { currentUser = null; location.reload(); };
         }
-        const adminOnly = document.querySelectorAll('.admin-only');
-        if (currentUser.rol === 'admin') adminOnly.forEach(el => el.style.display = 'inline-block');
-        else adminOnly.forEach(el => el.style.display = 'none');
+
+        // Mostrar las pestañas según rol
+        const clientTabs = document.querySelectorAll('.client-only');
+        const adminTabs = document.querySelectorAll('.admin-only');
+        if (currentUser.rol === 'admin') {
+            clientTabs.forEach(tab => tab.style.display = 'none');
+            adminTabs.forEach(tab => tab.style.display = 'inline-block');
+            // Asegurar que la primera pestaña visible sea "Admin: Productos"
+            showView('adminProductos');
+        } else {
+            clientTabs.forEach(tab => tab.style.display = 'inline-block');
+            adminTabs.forEach(tab => tab.style.display = 'none');
+            showView('productos');
+        }
+
         await loadProductos();
-        loadCart();
-        showView('productos');
+        if (currentUser.rol === 'cliente') {
+            loadCart();
+        }
     }
 
     // ========== EVENTOS ==========
@@ -531,7 +554,7 @@
     document.getElementById('refreshBtn').addEventListener('click', loadProductos);
     document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { if (tab.dataset.view) showView(tab.dataset.view); }));
 
-    // Mostrar pantalla de login inicialmente
+    // Inicialización
     document.getElementById('authScreen').style.display = 'block';
     document.getElementById('mainPanel').style.display = 'none';
 </script>
