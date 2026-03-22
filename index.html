@@ -6,7 +6,7 @@
     <title>Tienda Virtual | Admin y Cliente</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* (estilos sin cambios) */
+        /* (estilos igual que antes, no cambian) */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
         body { background: #f3f4f6; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
@@ -67,7 +67,7 @@
         <div class="user-area" id="userArea"></div>
     </div>
 
-    <!-- Pantalla de login/registro (sin cambios) -->
+    <!-- Pantalla de login/registro -->
     <div id="authScreen">
         <div style="max-width: 400px; margin: 40px auto; background: white; padding: 30px; border-radius: 24px;">
             <h2 style="text-align: center;">Bienvenido</h2>
@@ -91,7 +91,7 @@
         </div>
     </div>
 
-    <!-- Panel principal (sin cambios en el HTML, solo la función JS) -->
+    <!-- Panel principal (después de login) -->
     <div id="mainPanel" style="display:none">
         <div class="tabs" id="roleTabs">
             <div class="tab client-only" data-view="productos">Productos</div>
@@ -139,7 +139,7 @@
     </div>
 </div>
 
-<!-- Modal del carrito (solo para cliente) -->
+<!-- Modal del carrito -->
 <div id="cartModal" class="cart-modal">
     <div class="cart-content">
         <h3>Mi Carrito</h3>
@@ -161,7 +161,7 @@
     let productos = [];
     let cart = [];
 
-    // ========== LOGIN (sin cambios) ==========
+    // ========== LOGIN (manual con tabla perfiles) ==========
     async function login(email, password) {
         const loginErrorDiv = document.getElementById('loginError');
         if (loginErrorDiv) loginErrorDiv.innerText = '';
@@ -210,7 +210,7 @@
         return true;
     }
 
-    // ========== PRODUCTOS (sin cambios) ==========
+    // ========== PRODUCTOS ==========
     async function loadProductos() {
         const { data, error } = await supabaseClient
             .from('productos')
@@ -252,7 +252,7 @@
         }
     }
 
-    // ========== CARRITO (sin cambios) ==========
+    // ========== CARRITO ==========
     function addToCart(productoId) {
         const producto = productos.find(p => p.id === productoId);
         if (!producto) return;
@@ -315,7 +315,7 @@
         }
     }
 
-    // ========== COMPRA (sin cambios) ==========
+    // ========== COMPRA ==========
     async function checkout() {
         if (cart.length === 0) { alert('Carrito vacío'); return; }
         for (let item of cart) {
@@ -363,7 +363,7 @@
         await loadUserOrders();
     }
 
-    // ========== PEDIDOS DEL CLIENTE (sin cambios) ==========
+    // ========== PEDIDOS DEL CLIENTE ==========
     async function loadUserOrders() {
         const container = document.getElementById('ordersList');
         if (!container) return;
@@ -397,7 +397,7 @@
         `).join('');
     }
 
-    // ========== ADMIN: GESTIÓN DE PRODUCTOS (sin cambios) ==========
+    // ========== ADMIN: GESTIÓN DE PRODUCTOS ==========
     async function renderAdminProductosTable() {
         const tbody = document.getElementById('adminProductosTable');
         if (!tbody) return;
@@ -437,88 +437,88 @@
         else loadProductos();
     });
 
-    // ========== ADMIN: VER TODOS LOS PEDIDOS (MODIFICADA) ==========
-   
-   async function loadAdminPedidos() {
-    const container = document.getElementById('adminPedidosList');
-    if (!container) return;
-    container.innerHTML = 'Cargando pedidos...';
+    // ========== ADMIN: VER TODOS LOS PEDIDOS (VERSIÓN CORREGIDA) ==========
+    async function loadAdminPedidos() {
+        const container = document.getElementById('adminPedidosList');
+        if (!container) return;
+        container.innerHTML = 'Cargando pedidos...';
 
-    try {
-        // 1. Obtener todos los pedidos con sus detalles y productos
-        const { data: pedidos, error: pedidosError } = await supabaseClient
-            .from('pedidos')
-            .select(`
-                id,
-                usuario_id,
-                total,
-                estado,
-                created_at,
-                detalles_pedido (
-                    cantidad,
-                    precio_momento,
-                    productos (nombre)
-                )
-            `)
-            .order('created_at', { ascending: false });
+        try {
+            // 1. Obtener todos los pedidos con sus detalles y productos
+            const { data: pedidos, error: pedidosError } = await supabaseClient
+                .from('pedidos')
+                .select(`
+                    id,
+                    usuario_id,
+                    total,
+                    estado,
+                    created_at,
+                    detalles_pedido (
+                        cantidad,
+                        precio_momento,
+                        productos (nombre)
+                    )
+                `)
+                .order('created_at', { ascending: false });
 
-        if (pedidosError) throw pedidosError;
+            if (pedidosError) throw pedidosError;
 
-        if (!pedidos || pedidos.length === 0) {
-            container.innerHTML = '<p>No hay pedidos aún.</p>';
-            return;
-        }
+            if (!pedidos || pedidos.length === 0) {
+                container.innerHTML = '<p>No hay pedidos aún.</p>';
+                return;
+            }
 
-        // 2. Obtener los nombres de los usuarios de perfiles para todos los usuario_id únicos
-        const userIds = [...new Set(pedidos.map(p => p.usuario_id))];
-        const { data: perfiles, error: perfilesError } = await supabaseClient
-            .from('perfiles')
-            .select('id, nombre')
-            .in('id', userIds);
+            // 2. Obtener los nombres de los usuarios de perfiles para todos los usuario_id únicos
+            const userIds = [...new Set(pedidos.map(p => p.usuario_id))];
+            const { data: perfiles, error: perfilesError } = await supabaseClient
+                .from('perfiles')
+                .select('id, nombre')
+                .in('id', userIds);
 
-        if (perfilesError) throw perfilesError;
+            if (perfilesError) throw perfilesError;
 
-        // Crear un mapa id -> nombre
-        const userMap = {};
-        perfiles.forEach(perf => { userMap[perf.id] = perf.nombre; });
+            // Crear un mapa id -> nombre
+            const userMap = {};
+            perfiles.forEach(perf => { userMap[perf.id] = perf.nombre; });
 
-        // 3. Renderizar usando el mapa
-        container.innerHTML = pedidos.map(p => {
-            const userName = userMap[p.usuario_id] || p.usuario_id;
-            return `
-                <div class="order-item">
-                    <div class="order-id">Pedido #${p.id.slice(0,8)}</div>
-                    <div>Usuario: ${userName}</div>
-                    <div>Fecha: ${new Date(p.created_at).toLocaleString()}</div>
-                    <div>Total: S/ ${p.total}</div>
-                    <div>Estado: 
-                        <select data-id="${p.id}" class="order-status">
-                            <option ${p.estado === 'pendiente' ? 'selected' : ''}>pendiente</option>
-                            <option ${p.estado === 'pagado' ? 'selected' : ''}>pagado</option>
-                            <option ${p.estado === 'enviado' ? 'selected' : ''}>enviado</option>
-                            <option ${p.estado === 'entregado' ? 'selected' : ''}>entregado</option>
-                        </select>
-                        <button class="update-status" data-id="${p.id}">Actualizar</button>
+            // 3. Renderizar usando el mapa
+            container.innerHTML = pedidos.map(p => {
+                const userName = userMap[p.usuario_id] || p.usuario_id;
+                return `
+                    <div class="order-item">
+                        <div class="order-id">Pedido #${p.id.slice(0,8)}</div>
+                        <div>Usuario: ${userName}</div>
+                        <div>Fecha: ${new Date(p.created_at).toLocaleString()}</div>
+                        <div>Total: S/ ${p.total}</div>
+                        <div>Estado: 
+                            <select data-id="${p.id}" class="order-status">
+                                <option ${p.estado === 'pendiente' ? 'selected' : ''}>pendiente</option>
+                                <option ${p.estado === 'pagado' ? 'selected' : ''}>pagado</option>
+                                <option ${p.estado === 'enviado' ? 'selected' : ''}>enviado</option>
+                                <option ${p.estado === 'entregado' ? 'selected' : ''}>entregado</option>
+                            </select>
+                            <button class="update-status" data-id="${p.id}">Actualizar</button>
+                        </div>
+                        <div>Productos: ${p.detalles_pedido?.map(d => `${d.productos?.nombre} x ${d.cantidad}`).join(', ') || 'Sin productos'}</div>
                     </div>
-                    <div>Productos: ${p.detalles_pedido?.map(d => `${d.productos?.nombre} x ${d.cantidad}`).join(', ') || 'Sin productos'}</div>
-                </div>
-            `;
-        }).join('');
+                `;
+            }).join('');
 
-        // Reasignar eventos
-        document.querySelectorAll('.update-status').forEach(btn => btn.addEventListener('click', async () => {
-            const id = btn.dataset.id;
-            const select = document.querySelector(`.order-status[data-id="${id}"]`);
-            const newStatus = select.value;
-            await supabaseClient.from('pedidos').update({ estado: newStatus }).eq('id', id);
-            loadAdminPedidos(); // recargar
-        }));
-    } catch (error) {
-        console.error('Error cargando pedidos admin:', error);
-        container.innerHTML = '<p>Error al cargar pedidos. Consulta la consola para más detalles.</p>';
+            // Reasignar eventos a los botones de actualización
+            document.querySelectorAll('.update-status').forEach(btn => btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                const select = document.querySelector(`.order-status[data-id="${id}"]`);
+                const newStatus = select.value;
+                await supabaseClient.from('pedidos').update({ estado: newStatus }).eq('id', id);
+                loadAdminPedidos(); // recargar para reflejar cambios
+            }));
+        } catch (error) {
+            console.error('Error cargando pedidos admin:', error);
+            container.innerHTML = '<p>Error al cargar pedidos. Consulta la consola para más detalles.</p>';
+        }
     }
-}
-    // ========== NAVEGACIÓN (sin cambios) ==========
+
+    // ========== NAVEGACIÓN ==========
     function showView(viewId) {
         document.querySelectorAll('#mainPanel > div[id^="view"]').forEach(div => div.style.display = 'none');
         const targetDiv = document.getElementById(`view${viewId.charAt(0).toUpperCase() + viewId.slice(1)}`);
@@ -536,11 +536,13 @@
         if (!currentUser) return;
         document.getElementById('authScreen').style.display = 'none';
         document.getElementById('mainPanel').style.display = 'block';
+
         const userArea = document.getElementById('userArea');
         if (userArea) {
             userArea.innerHTML = `<span>👋 ${currentUser.nombre} (${currentUser.rol})</span><button id="logoutBtn" class="btn-outline">Cerrar sesión</button>`;
             document.getElementById('logoutBtn').onclick = () => { currentUser = null; location.reload(); };
         }
+
         const clientTabs = document.querySelectorAll('.client-only');
         const adminTabs = document.querySelectorAll('.admin-only');
         if (currentUser.rol === 'admin') {
@@ -552,11 +554,12 @@
             adminTabs.forEach(tab => tab.style.display = 'none');
             showView('productos');
         }
+
         await loadProductos();
         if (currentUser.rol === 'cliente') loadCart();
     }
 
-    // ========== EVENTOS (sin cambios) ==========
+    // ========== EVENTOS ==========
     document.getElementById('doLogin').addEventListener('click', async () => {
         const email = document.getElementById('loginEmail').value;
         const pass = document.getElementById('loginPassword').value;
