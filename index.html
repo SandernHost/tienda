@@ -438,67 +438,64 @@
     });
 
     // ========== ADMIN: VER TODOS LOS PEDIDOS (MODIFICADA) ==========
-    async function loadAdminPedidos() {
-        const container = document.getElementById('adminPedidosList');
-        if (!container) return;
-        container.innerHTML = 'Cargando pedidos...';
-        const { data, error } = await supabaseClient
-            .from('pedidos')
-            .select(`
-                id,
-                usuario_id,
-                total,
-                estado,
-                created_at,
-                detalles_pedido (
-                    cantidad,
-                    precio_momento,
-                    productos (nombre)
-                ),
-                perfiles!inner (nombre)
-            `)
-            .order('created_at', { ascending: false });
-        if (error) {
-            console.error('Error cargando pedidos admin:', error);
-            container.innerHTML = '<p>Error al cargar pedidos.</p>';
-            return;
-        }
-        if (data.length === 0) {
-            container.innerHTML = '<p>No hay pedidos aún.</p>';
-            return;
-        }
-        container.innerHTML = data.map(p => {
-            // Obtener el nombre del usuario desde la relación perfiles
-            const userName = p.perfiles && p.perfiles.length > 0 ? p.perfiles[0].nombre : p.usuario_id;
-            return `
-                <div class="order-item">
-                    <div class="order-id">Pedido #${p.id.slice(0,8)}</div>
-                    <div>Usuario: ${userName}</div>
-                    <div>Fecha: ${new Date(p.created_at).toLocaleString()}</div>
-                    <div>Total: S/ ${p.total}</div>
-                    <div>Estado: 
-                        <select data-id="${p.id}" class="order-status">
-                            <option ${p.estado === 'pendiente' ? 'selected' : ''}>pendiente</option>
-                            <option ${p.estado === 'pagado' ? 'selected' : ''}>pagado</option>
-                            <option ${p.estado === 'enviado' ? 'selected' : ''}>enviado</option>
-                            <option ${p.estado === 'entregado' ? 'selected' : ''}>entregado</option>
-                        </select>
-                        <button class="update-status" data-id="${p.id}">Actualizar</button>
-                    </div>
-                    <div>Productos: ${p.detalles_pedido.map(d => `${d.productos?.nombre} x ${d.cantidad}`).join(', ')}</div>
-                </div>
-            `;
-        }).join('');
-        // Reasignar eventos
-        document.querySelectorAll('.update-status').forEach(btn => btn.addEventListener('click', async () => {
-            const id = btn.dataset.id;
-            const select = document.querySelector(`.order-status[data-id="${id}"]`);
-            const newStatus = select.value;
-            await supabaseClient.from('pedidos').update({ estado: newStatus }).eq('id', id);
-            loadAdminPedidos();
-        }));
+   async function loadAdminPedidos() {
+    const container = document.getElementById('adminPedidosList');
+    if (!container) return;
+    container.innerHTML = 'Cargando pedidos...';
+    const { data, error } = await supabaseClient
+        .from('pedidos')
+        .select(`
+            id,
+            usuario_id,
+            total,
+            estado,
+            created_at,
+            detalles_pedido (
+                cantidad,
+                precio_momento,
+                productos (nombre)
+            ),
+            perfiles (nombre)
+        `)
+        .order('created_at', { ascending: false });
+    if (error) {
+        console.error('Error cargando pedidos admin:', error);
+        container.innerHTML = '<p>Error al cargar pedidos.</p>';
+        return;
     }
-
+    if (data.length === 0) {
+        container.innerHTML = '<p>No hay pedidos aún.</p>';
+        return;
+    }
+    container.innerHTML = data.map(p => {
+        const userName = p.perfiles ? p.perfiles.nombre : p.usuario_id;
+        return `
+            <div class="order-item">
+                <div class="order-id">Pedido #${p.id.slice(0,8)}</div>
+                <div>Usuario: ${userName}</div>
+                <div>Fecha: ${new Date(p.created_at).toLocaleString()}</div>
+                <div>Total: S/ ${p.total}</div>
+                <div>Estado: 
+                    <select data-id="${p.id}" class="order-status">
+                        <option ${p.estado === 'pendiente' ? 'selected' : ''}>pendiente</option>
+                        <option ${p.estado === 'pagado' ? 'selected' : ''}>pagado</option>
+                        <option ${p.estado === 'enviado' ? 'selected' : ''}>enviado</option>
+                        <option ${p.estado === 'entregado' ? 'selected' : ''}>entregado</option>
+                    </select>
+                    <button class="update-status" data-id="${p.id}">Actualizar</button>
+                </div>
+                <div>Productos: ${p.detalles_pedido.map(d => `${d.productos?.nombre} x ${d.cantidad}`).join(', ')}</div>
+            </div>
+        `;
+    }).join('');
+    document.querySelectorAll('.update-status').forEach(btn => btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const select = document.querySelector(`.order-status[data-id="${id}"]`);
+        const newStatus = select.value;
+        await supabaseClient.from('pedidos').update({ estado: newStatus }).eq('id', id);
+        loadAdminPedidos();
+    }));
+}
     // ========== NAVEGACIÓN (sin cambios) ==========
     function showView(viewId) {
         document.querySelectorAll('#mainPanel > div[id^="view"]').forEach(div => div.style.display = 'none');
