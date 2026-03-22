@@ -421,7 +421,7 @@
     const pedidosIds = pedidos.map(p => p.id);
 
     // 3. Obtener los detalles de esos pedidos, incluyendo el nombre del producto
-    const { data: detalles, error: detallesError } = await supabaseClient
+    const { data: detalles_pedido, error: detallesError } = await supabaseClient
         .from('detalles_pedido')
         .select(`
             pedido_id,
