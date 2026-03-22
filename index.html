@@ -40,6 +40,21 @@
         .admin-table { width: 100%; border-collapse: collapse; background: white; border-radius: 16px; overflow: hidden; }
         .admin-table th, .admin-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
         .admin-table th { background: #f9fafb; }
+        /* Estilo para imagen en tabla admin con zoom */
+        .admin-product-img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .admin-product-img:hover {
+            transform: scale(2);
+            z-index: 10;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
         .form-group { margin-bottom: 15px; }
         input, select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 12px; }
         @media (max-width: 640px) { .header { flex-direction: column; gap: 15px; text-align: center; } }
@@ -112,9 +127,11 @@
             <button id="newProductoBtn" class="btn">+ Nuevo producto</button>
             <div class="mt-4">
                 <table class="admin-table">
-                    <thead>汽<th>Nombre</th><th>Precio</th><th>Stock</th><th>Acciones</th> </thead>
+                    <thead>
+                        汽<th>Imagen</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Acciones</th>
+                    </thead>
                     <tbody id="adminProductosTable"></tbody>
-                 </table>
+                </table>
             </div>
         </div>
 
@@ -398,6 +415,7 @@
         if (!tbody) return;
         tbody.innerHTML = productos.map(p => `
             <tr>
+                <td><img class="admin-product-img" src="${p.imagen_url || 'https://via.placeholder.com/50?text=No+img'}" alt="${p.nombre}" onerror="this.src='https://via.placeholder.com/50?text=Error'"></td>
                 <td>${p.nombre}</td>
                 <td>S/ ${p.precio}</td>
                 <td>${p.stock}</td>
@@ -405,7 +423,7 @@
                     <button class="btn-outline edit-product" data-id="${p.id}">Editar</button>
                     <button class="btn-danger delete-product" data-id="${p.id}">Eliminar</button>
                 </td>
-            </tr>
+             </tr>
         `).join('');
         document.querySelectorAll('.edit-product').forEach(btn => btn.addEventListener('click', () => editProductoForm(btn.dataset.id)));
         document.querySelectorAll('.delete-product').forEach(btn => btn.addEventListener('click', async () => {
@@ -560,4 +578,3 @@
 </script>
 </body>
 </html>
-
