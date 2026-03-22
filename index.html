@@ -6,6 +6,7 @@
     <title>Tienda Virtual | Admin y Cliente</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* (estilos sin cambios) */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
         body { background: #f3f4f6; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
@@ -66,7 +67,7 @@
         <div class="user-area" id="userArea"></div>
     </div>
 
-    <!-- Pantalla de login/registro -->
+    <!-- Pantalla de login/registro (sin cambios) -->
     <div id="authScreen">
         <div style="max-width: 400px; margin: 40px auto; background: white; padding: 30px; border-radius: 24px;">
             <h2 style="text-align: center;">Bienvenido</h2>
@@ -90,7 +91,7 @@
         </div>
     </div>
 
-    <!-- Panel principal (después de login) -->
+    <!-- Panel principal (sin cambios en el HTML, solo la función JS) -->
     <div id="mainPanel" style="display:none">
         <div class="tabs" id="roleTabs">
             <div class="tab client-only" data-view="productos">Productos</div>
@@ -100,7 +101,6 @@
             <div class="tab admin-only" data-view="adminPedidos" style="display:none">Admin: Pedidos</div>
         </div>
 
-        <!-- VISTAS -->
         <div id="viewProductos">
             <div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2>Productos</h2>
@@ -126,11 +126,9 @@
             <button id="newProductoBtn" class="btn">+ Nuevo producto</button>
             <div class="mt-4">
                 <table class="admin-table">
-                    <thead>
-                        <th>Imagen</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Acciones</th>
-                    </thead>
+                    <thead><th>Imagen</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Acciones</th></thead>
                     <tbody id="adminProductosTable"></tbody>
-                </table>
+                追赶
             </div>
         </div>
 
@@ -163,33 +161,28 @@
     let productos = [];
     let cart = [];
 
-    // ========== LOGIN ==========
+    // ========== LOGIN (sin cambios) ==========
     async function login(email, password) {
         const loginErrorDiv = document.getElementById('loginError');
         if (loginErrorDiv) loginErrorDiv.innerText = '';
-
         const { data, error } = await supabaseClient
             .from('perfiles')
             .select('id, nombre, rol, contraseña')
             .eq('nombre', email)
             .maybeSingle();
-
         if (error) {
             console.error('Error consultando perfiles:', error);
             if (loginErrorDiv) loginErrorDiv.innerText = 'Error de conexión con Supabase';
             return false;
         }
-
         if (!data) {
             if (loginErrorDiv) loginErrorDiv.innerText = 'Usuario no encontrado';
             return false;
         }
-
         if (data.contraseña !== password) {
             if (loginErrorDiv) loginErrorDiv.innerText = 'Contraseña incorrecta';
             return false;
         }
-
         currentUser = { id: data.id, email: email, nombre: data.nombre, rol: data.rol };
         return true;
     }
@@ -197,23 +190,19 @@
     async function register(email, password, nombre) {
         const registerErrorDiv = document.getElementById('registerError');
         if (registerErrorDiv) registerErrorDiv.innerText = '';
-
         const { data: exist, error: existError } = await supabaseClient
             .from('perfiles')
             .select('id')
             .eq('nombre', email)
             .maybeSingle();
-
         if (exist) {
             if (registerErrorDiv) registerErrorDiv.innerText = 'El usuario ya existe';
             return false;
         }
-
         const newId = crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString() + Math.random());
         const { error: insertError } = await supabaseClient
             .from('perfiles')
             .insert({ id: newId, nombre: email, rol: 'cliente', contraseña: password });
-
         if (insertError) {
             if (registerErrorDiv) registerErrorDiv.innerText = 'Error al crear usuario: ' + insertError.message;
             return false;
@@ -221,7 +210,7 @@
         return true;
     }
 
-    // ========== PRODUCTOS ==========
+    // ========== PRODUCTOS (sin cambios) ==========
     async function loadProductos() {
         const { data, error } = await supabaseClient
             .from('productos')
@@ -263,7 +252,7 @@
         }
     }
 
-    // ========== CARRITO (solo para clientes) ==========
+    // ========== CARRITO (sin cambios) ==========
     function addToCart(productoId) {
         const producto = productos.find(p => p.id === productoId);
         if (!producto) return;
@@ -326,7 +315,7 @@
         }
     }
 
-    // ========== COMPRA (solo clientes) ==========
+    // ========== COMPRA (sin cambios) ==========
     async function checkout() {
         if (cart.length === 0) { alert('Carrito vacío'); return; }
         for (let item of cart) {
@@ -374,7 +363,7 @@
         await loadUserOrders();
     }
 
-    // ========== PEDIDOS DEL CLIENTE ==========
+    // ========== PEDIDOS DEL CLIENTE (sin cambios) ==========
     async function loadUserOrders() {
         const container = document.getElementById('ordersList');
         if (!container) return;
@@ -382,14 +371,16 @@
         const { data, error } = await supabaseClient
             .from('pedidos')
             .select(`
-    id,
-    usuario_id,
-    total,
-    estado,
-    created_at,
-    detalles_pedido (cantidad, precio_momento, productos (nombre)),
-    perfiles!inner (nombre)
-`)
+                id,
+                total,
+                estado,
+                created_at,
+                detalles_pedido (
+                    cantidad,
+                    precio_momento,
+                    productos (nombre)
+                )
+            `)
             .eq('usuario_id', currentUser.id)
             .order('created_at', { ascending: false })
             .limit(10);
@@ -406,7 +397,7 @@
         `).join('');
     }
 
-    // ========== ADMIN: GESTIÓN DE PRODUCTOS ==========
+    // ========== ADMIN: GESTIÓN DE PRODUCTOS (sin cambios) ==========
     async function renderAdminProductosTable() {
         const tbody = document.getElementById('adminProductosTable');
         if (!tbody) return;
@@ -446,7 +437,7 @@
         else loadProductos();
     });
 
-    // ========== ADMIN: VER TODOS LOS PEDIDOS ==========
+    // ========== ADMIN: VER TODOS LOS PEDIDOS (MODIFICADA) ==========
     async function loadAdminPedidos() {
         const container = document.getElementById('adminPedidosList');
         if (!container) return;
@@ -463,7 +454,8 @@
                     cantidad,
                     precio_momento,
                     productos (nombre)
-                )
+                ),
+                perfiles!inner (nombre)
             `)
             .order('created_at', { ascending: false });
         if (error) {
@@ -475,24 +467,29 @@
             container.innerHTML = '<p>No hay pedidos aún.</p>';
             return;
         }
-        container.innerHTML = data.map(p => `
-            <div class="order-item">
-                <div class="order-id">Pedido #${p.id.slice(0,8)}</div>
-                <div>Usuario: ${p.usuario_id}</div>
-                <div>Fecha: ${new Date(p.created_at).toLocaleString()}</div>
-                <div>Total: S/ ${p.total}</div>
-                <div>Estado: 
-                    <select data-id="${p.id}" class="order-status">
-                        <option ${p.estado === 'pendiente' ? 'selected' : ''}>pendiente</option>
-                        <option ${p.estado === 'pagado' ? 'selected' : ''}>pagado</option>
-                        <option ${p.estado === 'enviado' ? 'selected' : ''}>enviado</option>
-                        <option ${p.estado === 'entregado' ? 'selected' : ''}>entregado</option>
-                    </select>
-                    <button class="update-status" data-id="${p.id}">Actualizar</button>
+        container.innerHTML = data.map(p => {
+            // Obtener el nombre del usuario desde la relación perfiles
+            const userName = p.perfiles && p.perfiles.length > 0 ? p.perfiles[0].nombre : p.usuario_id;
+            return `
+                <div class="order-item">
+                    <div class="order-id">Pedido #${p.id.slice(0,8)}</div>
+                    <div>Usuario: ${userName}</div>
+                    <div>Fecha: ${new Date(p.created_at).toLocaleString()}</div>
+                    <div>Total: S/ ${p.total}</div>
+                    <div>Estado: 
+                        <select data-id="${p.id}" class="order-status">
+                            <option ${p.estado === 'pendiente' ? 'selected' : ''}>pendiente</option>
+                            <option ${p.estado === 'pagado' ? 'selected' : ''}>pagado</option>
+                            <option ${p.estado === 'enviado' ? 'selected' : ''}>enviado</option>
+                            <option ${p.estado === 'entregado' ? 'selected' : ''}>entregado</option>
+                        </select>
+                        <button class="update-status" data-id="${p.id}">Actualizar</button>
+                    </div>
+                    <div>Productos: ${p.detalles_pedido.map(d => `${d.productos?.nombre} x ${d.cantidad}`).join(', ')}</div>
                 </div>
-                <div>Productos: ${p.detalles_pedido.map(d => `${d.productos?.nombre} x ${d.cantidad}`).join(', ')}</div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
+        // Reasignar eventos
         document.querySelectorAll('.update-status').forEach(btn => btn.addEventListener('click', async () => {
             const id = btn.dataset.id;
             const select = document.querySelector(`.order-status[data-id="${id}"]`);
@@ -502,31 +499,15 @@
         }));
     }
 
-    // ========== NAVEGACIÓN ==========
+    // ========== NAVEGACIÓN (sin cambios) ==========
     function showView(viewId) {
-        console.log('🔄 Mostrando vista:', viewId);
-        // Ocultar todas las vistas (hijos directos de #mainPanel que empiecen con "view")
-        document.querySelectorAll('#mainPanel > div[id^="view"]').forEach(div => {
-            div.style.display = 'none';
-        });
-        // Mostrar la vista solicitada
+        document.querySelectorAll('#mainPanel > div[id^="view"]').forEach(div => div.style.display = 'none');
         const targetDiv = document.getElementById(`view${viewId.charAt(0).toUpperCase() + viewId.slice(1)}`);
-        if (targetDiv) {
-            targetDiv.style.display = 'block';
-            console.log('✅ Vista mostrada:', targetDiv.id);
-        } else {
-            console.error('❌ No se encontró la vista:', `view${viewId.charAt(0).toUpperCase() + viewId.slice(1)}`);
-        }
-        // Marcar la pestaña activa
-        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        if (targetDiv) targetDiv.style.display = 'block';
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         const activeTab = document.querySelector(`.tab[data-view="${viewId}"]`);
         if (activeTab) activeTab.classList.add('active');
-        
-        // Acciones adicionales
-        if (viewId === 'carrito') {
-            updateCartUI();
-            document.getElementById('cartModal').style.display = 'flex';
-        }
+        if (viewId === 'carrito') { updateCartUI(); document.getElementById('cartModal').style.display = 'flex'; }
         if (viewId === 'pedidos') loadUserOrders();
         if (viewId === 'adminProductos') renderAdminProductosTable();
         if (viewId === 'adminPedidos') loadAdminPedidos();
@@ -536,34 +517,27 @@
         if (!currentUser) return;
         document.getElementById('authScreen').style.display = 'none';
         document.getElementById('mainPanel').style.display = 'block';
-
         const userArea = document.getElementById('userArea');
         if (userArea) {
             userArea.innerHTML = `<span>👋 ${currentUser.nombre} (${currentUser.rol})</span><button id="logoutBtn" class="btn-outline">Cerrar sesión</button>`;
             document.getElementById('logoutBtn').onclick = () => { currentUser = null; location.reload(); };
         }
-
-        // Mostrar las pestañas según rol
         const clientTabs = document.querySelectorAll('.client-only');
         const adminTabs = document.querySelectorAll('.admin-only');
         if (currentUser.rol === 'admin') {
             clientTabs.forEach(tab => tab.style.display = 'none');
             adminTabs.forEach(tab => tab.style.display = 'inline-block');
-            // Mostrar la primera vista de admin (productos)
             showView('adminProductos');
         } else {
             clientTabs.forEach(tab => tab.style.display = 'inline-block');
             adminTabs.forEach(tab => tab.style.display = 'none');
             showView('productos');
         }
-
         await loadProductos();
-        if (currentUser.rol === 'cliente') {
-            loadCart();
-        }
+        if (currentUser.rol === 'cliente') loadCart();
     }
 
-    // ========== EVENTOS ==========
+    // ========== EVENTOS (sin cambios) ==========
     document.getElementById('doLogin').addEventListener('click', async () => {
         const email = document.getElementById('loginEmail').value;
         const pass = document.getElementById('loginPassword').value;
