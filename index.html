@@ -6,7 +6,7 @@
     <title>Tienda Virtual | Login con perfiles</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* (los mismos estilos que antes, sin cambios) */
+        /* ========== ESTILOS ========== */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
         body { background: #f3f4f6; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
@@ -143,48 +143,65 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ========== ESTADO ==========
-    let currentUser = null;      // { id, email, nombre, rol }
+    let currentUser = null;
     let productos = [];
     let cart = [];
 
-    // ========== AUTENTICACIÓN (tabla perfiles) ==========
+    // ========== FUNCIÓN DE LOGIN (USA TABLA perfiles) ==========
     async function login(email, password) {
+        const loginErrorDiv = document.getElementById('loginError');
+        if (loginErrorDiv) loginErrorDiv.innerText = '';
+
         const { data, error } = await supabaseClient
             .from('perfiles')
             .select('id, nombre, rol, contraseña')
             .eq('nombre', email)
-            .single();
+            .maybeSingle();
 
-        if (error || !data) {
-            document.getElementById('loginError').innerText = 'Usuario no encontrado';
+        if (error) {
+            console.error('Error consultando perfiles:', error);
+            if (loginErrorDiv) loginErrorDiv.innerText = 'Error de conexión con Supabase';
             return false;
         }
+
+        if (!data) {
+            if (loginErrorDiv) loginErrorDiv.innerText = 'Usuario no encontrado';
+            return false;
+        }
+
         if (data.contraseña !== password) {
-            document.getElementById('loginError').innerText = 'Contraseña incorrecta';
+            if (loginErrorDiv) loginErrorDiv.innerText = 'Contraseña incorrecta';
             return false;
         }
+
         currentUser = { id: data.id, email: email, nombre: data.nombre, rol: data.rol };
         return true;
     }
 
     async function register(email, password, nombre) {
+        const registerErrorDiv = document.getElementById('registerError');
+        if (registerErrorDiv) registerErrorDiv.innerText = '';
+
         // Verificar si ya existe
         const { data: exist, error: existError } = await supabaseClient
             .from('perfiles')
             .select('id')
             .eq('nombre', email)
-            .single();
+            .maybeSingle();
+
         if (exist) {
-            document.getElementById('registerError').innerText = 'El usuario ya existe';
+            if (registerErrorDiv) registerErrorDiv.innerText = 'El usuario ya existe';
             return false;
         }
-        // Generar un UUID
+
+        // Generar UUID
         const newId = crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString() + Math.random());
         const { error: insertError } = await supabaseClient
             .from('perfiles')
             .insert({ id: newId, nombre: email, rol: 'cliente', contraseña: password });
+
         if (insertError) {
-            document.getElementById('registerError').innerText = 'Error al crear usuario: ' + insertError.message;
+            if (registerErrorDiv) registerErrorDiv.innerText = 'Error al crear usuario: ' + insertError.message;
             return false;
         }
         return true;
@@ -277,7 +294,6 @@
         const total = cart.reduce((acc, i) => acc + i.cantidad, 0);
         const badge = document.getElementById('cartCountBadge');
         if (badge) badge.innerText = total;
-        // También actualizar el badge del botón "Carrito" si existe (no lo usamos)
     }
 
     function saveCart() {
@@ -295,7 +311,6 @@
     // ========== COMPRA ==========
     async function checkout() {
         if (cart.length === 0) { alert('Carrito vacío'); return; }
-        // Verificar stock actual
         for (let item of cart) {
             const { data, error } = await supabaseClient
                 .from('productos')
@@ -381,7 +396,7 @@
                     <button class="btn-outline edit-product" data-id="${p.id}">Editar</button>
                     <button class="btn-danger delete-product" data-id="${p.id}">Eliminar</button>
                 </td>
-            </tr>
+             </tr>
         `).join('');
         document.querySelectorAll('.edit-product').forEach(btn => btn.addEventListener('click', () => editProductoForm(btn.dataset.id)));
         document.querySelectorAll('.delete-product').forEach(btn => btn.addEventListener('click', async () => {
@@ -454,7 +469,7 @@
         }));
     }
 
-    // ========== NAVEGACIÓN ENTRE VISTAS ==========
+    // ========== NAVEGACIÓN ==========
     function showView(viewId) {
         document.querySelectorAll('#mainPanel > div[id^="view"]').forEach(div => div.style.display = 'none');
         const targetDiv = document.getElementById(`view${viewId.charAt(0).toUpperCase() + viewId.slice(1)}`);
@@ -516,7 +531,7 @@
     document.getElementById('refreshBtn').addEventListener('click', loadProductos);
     document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => { if (tab.dataset.view) showView(tab.dataset.view); }));
 
-    // Inicialización: mostrar pantalla de login
+    // Mostrar pantalla de login inicialmente
     document.getElementById('authScreen').style.display = 'block';
     document.getElementById('mainPanel').style.display = 'none';
 </script>
