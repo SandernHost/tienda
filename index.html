@@ -131,7 +131,7 @@
                         汽<th>Imagen</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Acciones</th>
                     </thead>
                     <tbody id="adminProductosTable"></tbody>
-                </table>
+                追赶
             </div>
         </div>
 
@@ -246,7 +246,7 @@
         }
         container.innerHTML = productos.map(p => `
             <div class="product-card">
-                <img class="product-img" src="${p.imagen_url || 'https://via.placeholder.com/200x150'}" alt="${p.nombre}">
+                <img class="product-img" src="${p.imagen_url || 'https://picsum.photos/200/150'}" alt="${p.nombre}" onerror="this.src='https://picsum.photos/200/150'">
                 <div class="product-info">
                     <div class="product-name">${p.nombre}</div>
                     <div class="product-price">S/ ${p.precio}</div>
@@ -415,7 +415,7 @@
         if (!tbody) return;
         tbody.innerHTML = productos.map(p => `
             <tr>
-                <td><img class="admin-product-img" src="${p.imagen_url || 'https://via.placeholder.com/50?text=No+img'}" alt="${p.nombre}" onerror="this.src='https://via.placeholder.com/50?text=Error'"></td>
+                <td><img class="admin-product-img" src="${p.imagen_url || 'https://picsum.photos/50/50'}" alt="${p.nombre}" onerror="this.src='https://picsum.photos/50/50'"></td>
                 <td>${p.nombre}</td>
                 <td>S/ ${p.precio}</td>
                 <td>${p.stock}</td>
@@ -423,7 +423,7 @@
                     <button class="btn-outline edit-product" data-id="${p.id}">Editar</button>
                     <button class="btn-danger delete-product" data-id="${p.id}">Eliminar</button>
                 </td>
-             </tr>
+            </tr>
         `).join('');
         document.querySelectorAll('.edit-product').forEach(btn => btn.addEventListener('click', () => editProductoForm(btn.dataset.id)));
         document.querySelectorAll('.delete-product').forEach(btn => btn.addEventListener('click', async () => {
