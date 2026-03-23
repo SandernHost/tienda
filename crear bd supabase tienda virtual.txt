@@ -1,0 +1,78 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.detalles_pedido (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  pedido_id uuid NOT NULL,
+  producto_id uuid NOT NULL,
+  cantidad integer NOT NULL,
+  precio_momento numeric NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT detalles_pedido_pkey PRIMARY KEY (id),
+  CONSTRAINT detalles_pedido_pedido_id_fkey FOREIGN KEY (pedido_id) REFERENCES public.pedidos(id),
+  CONSTRAINT detalles_pedido_producto_id_fkey FOREIGN KEY (producto_id) REFERENCES public.productos(id)
+);
+CREATE TABLE public.pedidos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  usuario_id uuid NOT NULL,
+  total numeric NOT NULL,
+  estado text DEFAULT 'pendiente'::text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT pedidos_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_pedidos_usuario FOREIGN KEY (usuario_id) REFERENCES public.perfiles(id),
+  CONSTRAINT fk_pedidos_perfiles FOREIGN KEY (usuario_id) REFERENCES public.perfiles(id)
+);
+CREATE TABLE public.perfiles (
+  id uuid NOT NULL,
+  nombre text,
+  rol text DEFAULT 'cliente'::text CHECK (rol = ANY (ARRAY['cliente'::text, 'admin'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  contraseña character varying,
+  CONSTRAINT perfiles_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.productos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  nombre text NOT NULL,
+  descripcion text,
+  precio numeric NOT NULL,
+  stock integer NOT NULL DEFAULT 0,
+  imagen_url text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT productos_pkey PRIMARY KEY (id)
+);
+
+
+
+
+
+
+
+INSERT INTO "public"."detalles_pedido" ("id", "pedido_id", "producto_id", "cantidad", "precio_momento", "created_at") VALUES ('03865faa-6901-4cee-bcc3-14ab1480bedb', '515f986e-a3f0-418f-8aaf-3669720a0547', '559dabe5-cf65-41b2-8edd-1ea793659626', '1', '499.00', '2026-03-22 19:59:51.347441+00'), ('07030873-ddd5-4b18-b985-a99f063ea83b', '33ca1f54-32f8-4d40-bf90-9296389ef17e', 'f7160580-e0c3-4334-b40d-87ff8d7e4284', '1', '399.00', '2026-03-22 18:33:23.061928+00'), ('11514173-230c-457a-920a-4197d67d524e', '25055498-5af3-456f-9576-fce483879969', 'cbe7801f-df09-4808-b893-2e06afe2cb3e', '3', '399.00', '2026-03-22 21:02:01.561032+00'), ('1e729168-b96f-4d22-863f-3ac647442a40', 'edcda34d-a905-4fc0-9bea-9e677711414e', '705b2033-9985-44ba-b24e-b457c8ae6ad3', '1', '459.00', '2026-03-22 18:33:23.061928+00'), ('2d931f41-5948-4252-b0b5-6200d0032628', '357bcead-a903-4fe6-8070-87003a7f0b99', 'cbe7801f-df09-4808-b893-2e06afe2cb3e', '3', '399.00', '2026-03-22 21:02:01.262599+00'), ('3552bb90-a7b0-43cd-8d02-5b4d14c6677f', '8c5e4ca9-ac42-4971-b959-bfa0c64b7a3c', '2b52f09f-d3a1-4440-aeab-7e1d33d0ac82', '1', '1899.00', '2026-03-22 18:33:23.061928+00'), ('36f921ce-e961-49f6-b166-696583db4577', 'edcda34d-a905-4fc0-9bea-9e677711414e', '2b52f09f-d3a1-4440-aeab-7e1d33d0ac82', '1', '1899.00', '2026-03-22 18:33:23.061928+00'), ('371c9402-4c43-4717-a050-739ea4745bc3', '82e6e0f3-8270-41f0-bc8b-b6d9624002f7', '26d80620-3f61-41cf-9ac0-fa1c58c28939', '1', '5.00', '2026-03-22 18:26:44.503281+00'), ('4469b629-94e0-46a1-930c-badce21a8809', 'c16d4dbd-beb3-43e3-bb5e-53d22610becc', '3cd62485-2e19-4d34-8da8-309a5f39664d', '2', '150.00', '2026-03-22 21:54:38.613088+00'), ('4605593e-758a-4a8f-b36b-933583b5ec90', '9ef0c6ae-2941-40d2-9dd1-67a49a26d2f7', '559dabe5-cf65-41b2-8edd-1ea793659626', '1', '499.00', '2026-03-22 20:29:17.357438+00'), ('4e0e2308-2264-497c-bc88-ec023529b7bb', '43990901-6aca-408a-a329-8196ba7f564b', '5bc7f21e-4a22-449d-9db3-c8c4c25405ea', '1', '1899.00', '2026-03-22 18:33:23.061928+00'), ('58c5c778-34bd-4193-bdb4-ed9c4bb659a6', 'e0cbbf4a-a3c1-401a-ad0e-3b98cbf2e664', 'f7160580-e0c3-4334-b40d-87ff8d7e4284', '2', '399.00', '2026-03-22 18:33:23.061928+00'), ('5f16c890-cffe-46ed-9501-d02d682d570c', '6c87e25f-c235-472a-b20a-fee3afe00cb5', '9ff98ad9-573e-44bc-a75c-5963875c5a85', '1', '1299.00', '2026-03-22 18:33:23.061928+00'), ('5f6f29c7-3c44-4bcb-bc72-40415d64df65', '8c5e4ca9-ac42-4971-b959-bfa0c64b7a3c', '7259b212-8622-4953-acdf-3c2103a9dc98', '1', '2499.00', '2026-03-22 18:33:23.061928+00'), ('75dcd285-83e4-4964-9df9-6d8b95f53e48', '60885e7a-f5bc-42fb-9a10-8b54e1d85322', '559dabe5-cf65-41b2-8edd-1ea793659626', '1', '499.00', '2026-03-22 21:00:43.289944+00'), ('7b6b6598-bb48-4855-8ff7-9085675a2215', '43990901-6aca-408a-a329-8196ba7f564b', '705b2033-9985-44ba-b24e-b457c8ae6ad3', '2', '459.00', '2026-03-22 18:33:23.061928+00'), ('7e3d1b3b-9523-4ada-a951-bc46ca875da3', 'b17cfabb-de1c-4319-8dea-def2773c8d64', '559dabe5-cf65-41b2-8edd-1ea793659626', '1', '499.00', '2026-03-22 20:05:38.53635+00'), ('812ec104-c1b5-43be-8676-e19ce3675a9e', 'e0cbbf4a-a3c1-401a-ad0e-3b98cbf2e664', '705b2033-9985-44ba-b24e-b457c8ae6ad3', '1', '459.00', '2026-03-22 18:33:23.061928+00'), ('87e48112-d864-4bb2-a708-a291dbea06fb', 'a4e16d0a-70f5-4d47-9199-f142219ab467', 'fa2ab3e2-9b57-43da-a3cd-cb342068f56e', '1', '2799.00', '2026-03-22 18:33:23.061928+00'), ('a8d403b7-40e2-47f8-81f7-0e0594a335b8', '75036da6-7583-42fd-a8fb-87eb772eb976', 'cbe7801f-df09-4808-b893-2e06afe2cb3e', '1', '399.00', '2026-03-22 22:05:06.726748+00'), ('b38c6888-0a8f-469d-9f2a-d20e7f69e4cc', '6c87e25f-c235-472a-b20a-fee3afe00cb5', '26d80620-3f61-41cf-9ac0-fa1c58c28939', '1', '1599.00', '2026-03-22 18:33:23.061928+00'), ('c65b9592-1747-40f3-a28f-61d390b1189d', '33ca1f54-32f8-4d40-bf90-9296389ef17e', 'a0ffb5cf-bde0-4876-86fc-f2c6c5b03ca5', '1', '799.00', '2026-03-22 18:33:23.061928+00'), ('cbf8eaad-dcfa-4223-a1e8-89964a969a6b', 'a4e16d0a-70f5-4d47-9199-f142219ab467', 'f6e5ca4f-45ad-4fb2-9341-638bd93c4e77', '1', '3499.00', '2026-03-22 18:33:23.061928+00'), ('d083c0a4-5de4-457f-8ae0-6ebe3000ca7d', 'd140eafb-6d4c-4086-b83d-115d4177cf15', '3cd62485-2e19-4d34-8da8-309a5f39664d', '1', '150.00', '2026-03-22 22:38:49.06124+00'), ('f1faa53e-6bdc-44dc-acfd-7930d2a2bc88', 'e0cbbf4a-a3c1-401a-ad0e-3b98cbf2e664', 'a0ffb5cf-bde0-4876-86fc-f2c6c5b03ca5', '1', '799.00', '2026-03-22 18:33:23.061928+00'), ('ff4405fd-4f41-4f44-a77e-12b8f93e1ea2', 'ef39ee97-7341-47c8-8bf9-5e80228f5d29', '6f3bc966-18f2-42cb-9e68-d086b4e6ede1', '1', '12000.00', '2026-03-22 21:54:52.501668+00'), ('ffc6d759-9829-473e-b518-ef76ad83e182', '515f986e-a3f0-418f-8aaf-3669720a0547', 'cbe7801f-df09-4808-b893-2e06afe2cb3e', '1', '399.00', '2026-03-22 19:59:51.347441+00');
+
+
+
+INSERT INTO "public"."pedidos" ("id", "usuario_id", "total", "estado", "created_at") VALUES ('25055498-5af3-456f-9576-fce483879969', '2d7c942d-d169-4622-a020-9496ff9a23c7', '1197.00', 'enviado', '2026-03-22 21:02:01.299271+00'), ('33ca1f54-32f8-4d40-bf90-9296389ef17e', '2d7c942d-d169-4622-a020-9496ff9a23c7', '1198.00', 'pagado', '2026-03-22 18:33:23.061928+00'), ('357bcead-a903-4fe6-8070-87003a7f0b99', '2d7c942d-d169-4622-a020-9496ff9a23c7', '1197.00', 'pendiente', '2026-03-22 21:02:00.955538+00'), ('43990901-6aca-408a-a329-8196ba7f564b', '2d7c942d-d169-4622-a020-9496ff9a23c7', '2817.00', 'pendiente', '2026-03-22 18:33:23.061928+00'), ('515f986e-a3f0-418f-8aaf-3669720a0547', 'b39e0d1a-de9f-4af4-8f39-fd8ff4c421cf', '898.00', 'pendiente', '2026-03-22 19:59:51.108002+00'), ('60885e7a-f5bc-42fb-9a10-8b54e1d85322', '2d7c942d-d169-4622-a020-9496ff9a23c7', '499.00', 'pendiente', '2026-03-22 21:00:42.982868+00'), ('6c87e25f-c235-472a-b20a-fee3afe00cb5', 'b39e0d1a-de9f-4af4-8f39-fd8ff4c421cf', '2898.00', 'pendiente', '2026-03-22 18:33:23.061928+00'), ('75036da6-7583-42fd-a8fb-87eb772eb976', 'bb612cf1-d8bc-4581-a382-8704f162811b', '399.00', 'pendiente', '2026-03-22 22:05:06.391349+00'), ('82e6e0f3-8270-41f0-bc8b-b6d9624002f7', 'b39e0d1a-de9f-4af4-8f39-fd8ff4c421cf', '2.00', 'text', '2026-03-22 18:24:37.814396+00'), ('8c5e4ca9-ac42-4971-b959-bfa0c64b7a3c', 'b39e0d1a-de9f-4af4-8f39-fd8ff4c421cf', '4398.00', 'entregado', '2026-03-22 18:33:23.061928+00'), ('9ef0c6ae-2941-40d2-9dd1-67a49a26d2f7', 'b39e0d1a-de9f-4af4-8f39-fd8ff4c421cf', '499.00', 'pendiente', '2026-03-22 20:29:17.077138+00'), ('a4e16d0a-70f5-4d47-9199-f142219ab467', 'b39e0d1a-de9f-4af4-8f39-fd8ff4c421cf', '6298.00', 'enviado', '2026-03-22 18:33:23.061928+00'), ('b17cfabb-de1c-4319-8dea-def2773c8d64', 'b39e0d1a-de9f-4af4-8f39-fd8ff4c421cf', '499.00', 'pendiente', '2026-03-22 20:05:38.244951+00'), ('c16d4dbd-beb3-43e3-bb5e-53d22610becc', 'bb612cf1-d8bc-4581-a382-8704f162811b', '300.00', 'pendiente', '2026-03-22 21:54:38.311305+00'), ('d140eafb-6d4c-4086-b83d-115d4177cf15', 'bb612cf1-d8bc-4581-a382-8704f162811b', '150.00', 'pendiente', '2026-03-22 22:38:48.780272+00'), ('e0cbbf4a-a3c1-401a-ad0e-3b98cbf2e664', 'b39e0d1a-de9f-4af4-8f39-fd8ff4c421cf', '2056.00', 'enviado', '2026-03-22 18:33:23.061928+00'), ('edcda34d-a905-4fc0-9bea-9e677711414e', '2d7c942d-d169-4622-a020-9496ff9a23c7', '2358.00', 'entregado', '2026-03-22 18:33:23.061928+00'), ('ef39ee97-7341-47c8-8bf9-5e80228f5d29', 'bb612cf1-d8bc-4581-a382-8704f162811b', '12000.00', 'pendiente', '2026-03-22 21:54:52.121519+00');
+
+
+
+INSERT INTO "public"."productos" ("id", "nombre", "descripcion", "precio", "stock", "imagen_url", "created_at") VALUES ('1688e97c-f768-4fe6-8993-e36a7a900001', 'Router WiFi 6 TP-Link', 'Router dual-band, tecnología WiFi 6', '229.00', '15', 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=300', '2026-03-22 18:31:47.108346+00'), ('26be0152-70d0-44c0-ab5a-3481bf7fef97', 'Parlante JBL Charge 5', 'Altavoz portátil Bluetooth, resistente al agua', '399.00', '8', 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=300', '2026-03-22 18:31:47.108346+00'), ('26d80620-3f61-41cf-9ac0-fa1c58c28939', 'Smart TV Sony 43"', 'Televisor Sony Bravia, 4K HDR, Android TV', '1599.00', '0', 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=300', '2026-03-22 18:17:18.128368+00'), ('2b52f09f-d3a1-4440-aeab-7e1d33d0ac82', 'Smart TV LG 55" 4K UHD', 'Televisor LG con resolución 4K, Smart TV, webOS', '1899.00', '12', 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=300', '2026-03-22 18:17:18.128368+00'), ('3cd62485-2e19-4d34-8da8-309a5f39664d', 'CASA 1', null, '150.00', '29', '', '2026-03-22 21:40:59.730119+00'), ('559dabe5-cf65-41b2-8edd-1ea793659626', 'Teclado Mecánico Logitech G915', 'Teclado inalámbrico RGB, switches GL', '499.00', '12', 'https://images.unsplash.com/photo-1618384887929-16ec33c9b0e4?w=300', '2026-03-22 18:31:48.583257+00'), ('5976b8f7-b3bb-4f53-9d15-b139f01be5c9', 'Monitor Samsung 27" Curvo', 'Monitor curvo 27 pulgadas, 144Hz', '899.00', '5', 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=300', '2026-03-22 18:31:47.108346+00'), ('5bc7f21e-4a22-449d-9db3-c8c4c25405ea', 'Lavadora LG Carga Frontal', 'Lavadora automática 16kg, carga frontal, acero inoxidable', '1899.00', '10', 'https://images.unsplash.com/photo-1626806787461-102c1a9e38f2?w=300', '2026-03-22 18:17:18.128368+00'), ('6ea3a820-ca7b-473e-9157-46021d03c487', 'Teclado Mecánico Logitech G915', 'Teclado inalámbrico RGB, switches GL', '499.00', '12', 'https://images.unsplash.com/photo-1618384887929-16ec33c9b0e4?w=300', '2026-03-22 18:31:47.108346+00'), ('6f3bc966-18f2-42cb-9e68-d086b4e6ede1', 'vocho50', 'carro antiguo', '12000.00', '19', 'https://tse2.mm.bing.net/th/id/OIP.MGutpzBpuDczjcHiwktQIQHaEo?rs=1&pid=ImgDetMain&o=7&rm=3', '2026-03-22 19:11:23.434717+00'), ('705b2033-9985-44ba-b24e-b457c8ae6ad3', 'Cafetera Nespresso', 'Cafetera espresso automática, sistema de cápsulas, 19 bar', '459.00', '20', 'https://images.unsplash.com/photo-1517668808822-9bba02b5f95b?w=300', '2026-03-22 18:17:18.128368+00'), ('7259b212-8622-4953-acdf-3c2103a9dc98', 'Refrigeradora Samsung 300L', 'Refrigeradora No Frost, capacidad 300L, acero inoxidable', '2499.00', '8', 'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=300', '2026-03-22 18:17:18.128368+00'), ('991abc50-5ec8-447c-937f-2ae667084e3e', 'Router WiFi 6 TP-Link', 'Router dual-band, tecnología WiFi 6', '229.00', '15', 'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=300', '2026-03-22 18:31:48.583257+00'), ('9ff98ad9-573e-44bc-a75c-5963875c5a85', 'Aire Acondicionado Split 12000 BTU', 'Aire acondicionado inverter, frío/calor, control remoto', '1299.00', '6', 'https://images.unsplash.com/photo-1571195438412-8e121ad48f2e?w=300', '2026-03-22 18:17:18.128368+00'), ('a0ffb5cf-bde0-4876-86fc-f2c6c5b03ca5', 'Aspiradora Robot Xiaomi', 'Aspiradora robot con mopa, navegación láser, 4000Pa', '799.00', '15', 'https://images.unsplash.com/photo-1529589438032-2c0e4b6fc8c1?w=300', '2026-03-22 18:17:18.128368+00'), ('c7239a87-80e8-4709-9be4-3aecb0852b22', 'Monitor Samsung 27" Curvo', 'Monitor curvo 27 pulgadas, 144Hz', '899.00', '5', 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=300', '2026-03-22 18:31:48.583257+00'), ('cbe7801f-df09-4808-b893-2e06afe2cb3e', 'Parlante JBL Charge 5', 'Altavoz portátil Bluetooth, resistente al agua', '399.00', '7', 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=300', '2026-03-22 18:31:48.583257+00'), ('f6e5ca4f-45ad-4fb2-9341-638bd93c4e77', 'iPhone 15 128GB', 'Smartphone Apple iPhone 15, pantalla 6.1", cámara 48MP', '3499.00', '5', 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300', '2026-03-22 18:17:18.128368+00'), ('f7160580-e0c3-4334-b40d-87ff8d7e4284', 'Microondas Panasonic Inverter', 'Horno microondas con tecnología inverter, 27L', '399.00', '25', 'https://images.unsplash.com/photo-1574267432553-4b4628081c31?w=300', '2026-03-22 18:17:18.128368+00'), ('fa2ab3e2-9b57-43da-a3cd-cb342068f56e', 'Laptop Lenovo ThinkPad', 'Notebook Lenovo ThinkPad, Intel Core i7, 16GB RAM, 512GB SSD', '2799.00', '7', 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=300', '2026-03-22 18:17:18.128368+00');
+
+
+
+
+
+INSERT INTO "public"."perfiles" ("id", "nombre", "rol", "created_at", "contraseña") VALUES ('27cd7e80-eff1-4f8f-aa94-09436ccfc3fa', 'caso1@tienda.com', 'cliente', '2026-03-22 22:39:51.45152+00', '123'), ('2d7c942d-d169-4622-a020-9496ff9a23c7', 'cliente1@tienda.com', 'cliente', '2026-03-22 17:56:01.360256+00', 'cliente1'), ('9f8c89d4-0ef2-4fdc-9e74-c089f99933eb', 'admin1@tienda.com', 'admin', '2026-03-22 19:51:26.82602+00', 'admin1'), ('b39e0d1a-de9f-4af4-8f39-fd8ff4c421cf', 'invitado@tienda.com', 'cliente', '2026-03-22 17:47:48.83043+00', 'invitado1'), ('bb612cf1-d8bc-4581-a382-8704f162811b', 'sandern@tienda.com', 'cliente', '2026-03-22 21:44:51.164061+00', '123');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
